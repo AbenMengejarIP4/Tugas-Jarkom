@@ -1,73 +1,48 @@
 import socket
 import threading
+import queue
 
-# Konfigurasi server
-SERVER_IP = '127.0.0.1'  # Alamat IP server
-SERVER_PORT = 12345  # Port server
-PASSWORD = "password123"  # Password untuk client
+messages = queue.Queue()
+clients = []
 
-clients = {}  # Dictionary untuk menyimpan username dan alamat client
+server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server.bind(("localhost", 9999))
 
-
-# Fungsi untuk menangani pesan dari client
-def handle_client(data, client_address):
-    try:
-        message = data.decode('utf-8')
-
-        if client_address not in clients.values():
-            # Validasi password client
-            if message.startswith("PASS "):
-                client_password = message.split(" ")[1]
-                if client_password == PASSWORD:
-                    server_socket.sendto("OK".encode('utf-8'), client_address)
-                    print(f"Client {client_address} berhasil masuk.")
-                else:
-                    server_socket.sendto("PASSWORD SALAH".encode('utf-8'), client_address)
-                    return
-            else:
-                return
-
-        elif message.startswith("USER "):
-            # Set username untuk client
-            username = message.split(" ")[1]
-            clients[username] = client_address
-            print(f"Client {username} masuk dari {client_address}.")
-            broadcast(f"{username} telah bergabung ke chatroom.".encode('utf-8'), client_address)
-
-        else:
-            # Proses pesan chat dan broadcast ke semua client lain
-            for username, address in clients.items():
-                if address != client_address:
-                    server_socket.sendto(data, address)
-            print(f"Pesan dari {client_address}: {message}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-# Fungsi untuk mengirim pesan ke semua client kecuali pengirim
-def broadcast(message, sender_address):
-    for address in clients.values():
-        if address != sender_address:
-            server_socket.sendto(message, address)
-
-
-# Fungsi utama server
-def start_server():
-    global server_socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.bind((SERVER_IP, SERVER_PORT))
-
-    print(f"Server berjalan di {SERVER_IP}:{SERVER_PORT}")
-
+def receive():
     while True:
         try:
-            data, client_address = server_socket.recvfrom(1024)
-            threading.Thread(target=handle_client, args=(data, client_address)).start()
-        except KeyboardInterrupt:
-            print("Server dihentikan.")
-            break
+            message, addr = server.recvfrom(1024)
+            messages.put((message, addr))
+        except:
+            pass
 
+def broadcast():
+    while True:
+        while not messages.empty():
+            message, addr = messages.get()
+            decoded_message = message.decode()
+            print(decoded_message)
+            
+            # Add client address if not already in the list
+            if addr not in clients:
+                clients.append(addr)
 
-if __name__ == "__main__":
-    start_server()
+            for client in clients:
+                try:
+                    # Handle new client signup
+                    if decoded_message.startswith("SIGNUP_TAG:"):
+                        name = decoded_message.split(":")[1]
+                        server.sendto(f"{name} joined!".encode('utf-8'), client)
+                    else:
+                        # Send the message to all clients
+                        server.sendto(message, client)
+                except:
+                    # Remove client if sending failed
+                    clients.remove(client)
+
+# Start threads for receiving and broadcasting messages
+t1 = threading.Thread(target=receive)
+t2 = threading.Thread(target=broadcast)
+
+t1.start()
+t2.start()
