@@ -2,16 +2,26 @@ import socket
 import threading
 
 class ChatServer:
-    def __init__(self, host, port, password):
+    def __init__(self, host, password):
         self.host = host
-        self.port = port
         self.password = password
         self.clients = {}  # {address: username}
         self.lock = threading.Lock()
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind((self.host, self.port))
+        self.socket = None
+        self.port = None
 
     def start(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        while True:
+            try:
+                self.port = int(input("Masukkan nomor port untuk server: "))
+                self.socket.bind((self.host, self.port))
+                break
+            except OSError:
+                print(f"Port {self.port} sudah digunakan. Silakan coba port lain.")
+            except ValueError:
+                print("Masukkan nomor port yang valid.")
+
         print(f"Server berjalan di {self.host}:{self.port}")
         while True:
             try:
@@ -47,5 +57,5 @@ class ChatServer:
                 self.socket.sendto(message.encode('utf-8'), client_addr)
 
 if __name__ == "__main__":
-    server = ChatServer("0.0.0.0", 5000, "rahasia123")
+    server = ChatServer("0.0.0.0", "rahasia123")
     server.start()
