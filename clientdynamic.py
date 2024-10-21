@@ -2,13 +2,21 @@ import socket
 import threading
 
 class ChatClient:
-    def __init__(self, server_host, server_port):
-        self.server_host = server_host
-        self.server_port = server_port
+    def __init__(self):
+        self.server_host = None
+        self.server_port = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.username = None
 
     def start(self):
+        self.server_host = input("Masukkan IP server: ")
+        while True:
+            try:
+                self.server_port = int(input("Masukkan port server: "))
+                break
+            except ValueError:
+                print("Masukkan nomor port yang valid.")
+
         self.username = input("Masukkan username: ")
         password = input("Masukkan password: ")
         self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
@@ -37,7 +45,5 @@ class ChatClient:
             self.socket.sendto(message.encode('utf-8'), (self.server_host, self.server_port))
 
 if __name__ == "__main__":
-    server_host = input("Masukkan IP server: ")
-    server_port = int(input("Masukkan port server: "))
-    client = ChatClient(server_host, server_port)
+    client = ChatClient()
     client.start()
