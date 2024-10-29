@@ -2,27 +2,28 @@ import socket
 import threading
 
 class ChatServer:
-    def __init__(self, host, password):
-        self.host = host
+    def __init__(self, password):
         self.password = password
-        self.clients = {}  # {address: username}
+        self.clients = {} 
         self.lock = threading.Lock()
         self.socket = None
         self.port = None
 
     def start(self):
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         while True:
             try:
                 self.port = int(input("Masukkan nomor port untuk server: "))
-                self.socket.bind((self.host, self.port))
+                self.socket.bind((local_ip, self.port))
                 break
             except OSError:
                 print(f"Port {self.port} sudah digunakan. Silakan coba port lain.")
             except ValueError:
                 print("Masukkan nomor port yang valid.")
 
-        print(f"Server berjalan di {self.host}:{self.port}")
+        print(f"Server berjalan di {local_ip}:{self.port}")
         while True:
             try:
                 data, addr = self.socket.recvfrom(1024)
@@ -49,16 +50,14 @@ class ChatServer:
                     self.socket.sendto("Password salah.".encode('utf-8'), addr)
         else:
             username = self.clients[addr]
-            # Print the message received for debugging
-            print(f"Pesan dari {message}")
-            # Broadcast the message without repeating the username
-            self.broadcast(f"{username}: {message}", addr)  # Only prepend username here
-
+            print(f"Pesan dari {username}")
+            self.broadcast(f"{username}: {message}", addr)  
+            
     def broadcast(self, message, sender_addr):
         for client_addr in self.clients:
             if client_addr != sender_addr:
                 self.socket.sendto(message.encode('utf-8'), client_addr)
 
 if __name__ == "__main__":
-    server = ChatServer("0.0.0.0", "rahasia123")  # Change password as necessary
+    server = ChatServer("rahasia123") 
     server.start()
