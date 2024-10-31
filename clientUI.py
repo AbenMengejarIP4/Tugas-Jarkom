@@ -56,16 +56,23 @@ class ChatClient:
 
         if password != correct_password:
             messagebox.showerror("Input Error", "Password anda salah")
+            return
         
-        self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
-        
-        response, _ = self.socket.recvfrom(1024)
-        response_message = response.decode('utf-8')
-        
-        if "Login berhasil" in response_message:
-            self.login_frame.pack_forget()
-            self.setup_chat_ui()
-            threading.Thread(target=self.receive_messages, daemon=True).start()
+        try:
+            self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
+            response, _ = self.socket.recvfrom(1024)
+            response_message = response.decode('utf-8')
+            
+            if "Login berhasil" in response_message:
+                self.login_frame.pack_forget()
+                self.setup_chat_ui()
+                threading.Thread(target=self.receive_messages, daemon=True).start()
+            else:
+                messagebox.showerror("Login Error", response_message)
+        except (socket.gaierror, socket.error) as e:
+            # Display the error in a messagebox if there is a socket error
+            messagebox.showerror("Connection Error", "Nomor Port Salah")
+
 
     def setup_chat_ui(self):
         self.chat_frame = tk.Frame(self.master)
@@ -111,8 +118,24 @@ class ChatClient:
             self.message_entry.delete(0, tk.END)
 
     def logout(self):
+        # Close the socket connection
         self.socket.close()
-        self.master.destroy()
+
+        # Hide the chatroom UI
+        self.chat_frame.pack_forget()
+
+        # Reinitialize the socket for a new connection
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # Clear username field and show login frame
+        self.username_entry.delete(0, tk.END)
+        self.password_entry.delete(0, tk.END)
+        self.server_entry.delete(0, tk.END)
+        self.port_entry.delete(0, tk.END)
+        
+        # Display the login UI
+        self.login_frame.pack(padx=50, pady=10)
+
 
 
 if __name__ == "__main__":
