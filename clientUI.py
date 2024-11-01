@@ -5,6 +5,7 @@ from tkinter import scrolledtext, messagebox
 
 class ChatClient:
     def __init__(self, master):
+        # (Initialization code remains the same)
         self.master = master
         self.master.title("Chat Room Client")
 
@@ -38,11 +39,11 @@ class ChatClient:
         self.chat_frame = None
 
     def login(self):
+        # (Login code remains the same)
         self.server_host = self.server_entry.get()
         try:
             self.server_port = int(self.port_entry.get())
         except ValueError:
-            self.send_error_log_to_server("Invalid Port: Masukkan nomor port yang valid.")
             messagebox.showerror("Invalid Port", "Masukkan nomor port yang valid.")
             return
 
@@ -56,32 +57,26 @@ class ChatClient:
         correct_password = "rahasia123"
 
         if password != correct_password:
-            self.socket.sendto(f"{self.username}".encode('utf-8'), (self.server_host, self.server_port))
             messagebox.showerror("Input Error", "Password anda salah")
             return
-        
-        try:
-            self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
-            response, _ = self.socket.recvfrom(1024)
-            response_message = response.decode('utf-8')
-            
-            if "Login berhasil" in response_message:
-                self.login_frame.pack_forget()
-                self.setup_chat_ui()
-                threading.Thread(target=self.receive_messages, daemon=True).start()
-            else:
-                messagebox.showerror("Login Error", response_message)
-        except (socket.gaierror, socket.error) as e:
 
-            messagebox.showerror("Connection Error", "IP/Port Salah")
-    
+        self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
+        
+        response, _ = self.socket.recvfrom(1024)
+        response_message = response.decode('utf-8')
+        
+        if "Login berhasil" in response_message:
+            self.login_frame.pack_forget()
+            self.setup_chat_ui()
+            threading.Thread(target=self.receive_messages, daemon=True).start()
 
     def setup_chat_ui(self):
+        # (UI setup code remains the same)
         self.chat_frame = tk.Frame(self.master)
         self.chat_frame.pack(padx=10, pady=10)
 
         self.chat_log = scrolledtext.ScrolledText(self.chat_frame, state='disabled', width=50, height=20)
-        self.chat_log.grid(row=0, column=0, columnspan=2) 
+        self.chat_log.grid(row=0, column=0, columnspan=2)
 
         self.username_frame = tk.Label(self.chat_frame, text = f"{self.username}", width=6)
         self.username_frame.grid(row=1, column=0)
@@ -95,16 +90,27 @@ class ChatClient:
         self.logout_button = tk.Button(self.chat_frame, text="Logout", command=self.logout)
         self.logout_button.grid(row=2, columnspan=2)
 
+    def encrypt_message(self, message):
+        # Caesar cipher encryption with shift 10
+        encrypted = ''.join(chr((ord(char) - 32 + 10) % 95 + 32) if 32 <= ord(char) <= 126 else char for char in message)
+        return encrypted
+
+    def decrypt_message(self, message):
+        # Caesar cipher decryption with shift 10
+        decrypted = ''.join(chr((ord(char) - 32 - 10) % 95 + 32) if 32 <= ord(char) <= 126 else char for char in message)
+        return decrypted
+
     def receive_messages(self):
         while True:
             try:
                 data, _ = self.socket.recvfrom(1024)
-                message = data.decode('utf-8')
-          
+                encrypted_message = data.decode('utf-8')
+                # Decrypt the received message
+                message = self.decrypt_message(encrypted_message)
                 self.chat_log.configure(state='normal')
                 self.chat_log.insert(tk.END, f"{message}\n")
                 self.chat_log.configure(state='disabled')
-                self.chat_log.yview(tk.END) 
+                self.chat_log.yview(tk.END)
             except Exception as e:
                 print(f"Error: {e}")
                 break
@@ -112,16 +118,16 @@ class ChatClient:
     def send_message(self):
         message = self.message_entry.get()
         if message:
-            formatted_message = f"{self.username}: {message}" 
-            self.socket.sendto(message.encode('utf-8'), (self.server_host, self.server_port))
+            formatted_message = f"{self.username}: {message}"
+            # Encrypt the message before sending
+            encrypted_message = self.encrypt_message(formatted_message)
+            self.socket.sendto(encrypted_message.encode('utf-8'), (self.server_host, self.server_port))
             self.chat_log.configure(state='normal')
-            self.chat_log.insert(tk.END, f"{formatted_message}\n") 
+            self.chat_log.insert(tk.END, f"{formatted_message}\n")
             self.chat_log.configure(state='disabled')
             self.message_entry.delete(0, tk.END)
 
     def logout(self):
- 
-        self.socket.sendto(f"LOGOUT:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
         self.socket.close()
         self.chat_frame.pack_forget()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -130,8 +136,6 @@ class ChatClient:
         self.server_entry.delete(0, tk.END)
         self.port_entry.delete(0, tk.END)
         self.login_frame.pack(padx=50, pady=10)
-
-
 
 if __name__ == "__main__":
     root = tk.Tk()
