@@ -42,6 +42,7 @@ class ChatServer:
     
     def handle_client(self, data, addr):
         encrypted_message = data.decode('utf-8')
+        print("Encrypted message: ", encrypted_message)
         if addr not in self.clients:
             if encrypted_message.startswith("LOGIN:"):
                 _, password, username = encrypted_message.split(':')
