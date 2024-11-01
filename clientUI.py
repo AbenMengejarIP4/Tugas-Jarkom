@@ -39,7 +39,6 @@ class ChatClient:
         self.chat_frame = None
 
     def login(self):
-        # (Login code remains the same)
         self.server_host = self.server_entry.get()
         try:
             self.server_port = int(self.port_entry.get())
@@ -59,16 +58,21 @@ class ChatClient:
         if password != correct_password:
             messagebox.showerror("Input Error", "Password anda salah")
             return
-
-        self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
         
-        response, _ = self.socket.recvfrom(1024)
-        response_message = response.decode('utf-8')
-        
-        if "Login berhasil" in response_message:
-            self.login_frame.pack_forget()
-            self.setup_chat_ui()
-            threading.Thread(target=self.receive_messages, daemon=True).start()
+        try:
+            self.socket.sendto(f"LOGIN:{password}:{self.username}".encode('utf-8'), (self.server_host, self.server_port))
+            response, _ = self.socket.recvfrom(1024)
+            response_message = response.decode('utf-8')
+            
+            if "Login berhasil" in response_message:
+                self.login_frame.pack_forget()
+                self.setup_chat_ui()
+                threading.Thread(target=self.receive_messages, daemon=True).start()
+            else:
+                messagebox.showerror("Login Error", response_message)
+        except (socket.gaierror, socket.error) as e:
+            # Display the error in a messagebox if there is a socket error
+            messagebox.showerror("Connection Error", "IP/Port Salah")
 
     def setup_chat_ui(self):
         # (UI setup code remains the same)
