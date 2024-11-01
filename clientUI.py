@@ -111,8 +111,7 @@ class ChatClient:
         while True:
             try:
                 data, _ = self.socket.recvfrom(1024)
-                encrypted_message = data.decode('utf-8')
-                message = self.decrypt_message(encrypted_message)
+                message = data.decode('utf-8')
                 self.chat_log.configure(state='normal')
                 self.chat_log.insert(tk.END, f"{message}\n")
                 self.chat_log.configure(state='disabled')
