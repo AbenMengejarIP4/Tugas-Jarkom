@@ -67,7 +67,7 @@ class ChatServer:
         else:
             username = self.clients[addr]
             decrypted_message = self.decrypt_message(encrypted_message)
-            self.log(f"Pesan dari {username} ({addr}): {decrypted_message}")
+            self.log(f"Pesan dari {username} ({addr}): {encrypted_message}")
             self.broadcast(f"{decrypted_message}", addr)
             
     def broadcast(self, message, sender_addr):
