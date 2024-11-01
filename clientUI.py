@@ -85,7 +85,7 @@ class ChatClient:
                 messagebox.showerror("Login Error", response_message)
         except (socket.gaierror, socket.error) as e:
 
-            messagebox.showerror("Connection Error", "Nomor Port Salah")
+            messagebox.showerror("Connection Error", "IP/Port Salah")
     
 
     def setup_chat_ui(self):
