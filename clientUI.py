@@ -51,6 +51,8 @@ class ChatClient:
         self.server_host = self.server_entry.get()
         try:
             self.server_port = int(self.port_entry.get())
+            if not (1 <= self.server_port <= 65535):
+                messagebox.showerror("Invalid Port", "Masukkan nomor port yang valid (Nomor port yang valid ada di rentang 0 - 65535).")
         except ValueError:
             self.send_error_log_to_server("Invalid Port: Masukkan nomor port yang valid.")
             messagebox.showerror("Invalid Port", "Masukkan nomor port yang valid.")
