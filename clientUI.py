@@ -42,6 +42,9 @@ class ChatClient:
         try:
             self.server_port = int(self.port_entry.get())
         except ValueError:
+
+            self.send_error_log_to_server("Invalid Port: Masukkan nomor port yang valid.")
+
             messagebox.showerror("Invalid Port", "Masukkan nomor port yang valid.")
             return
 
@@ -55,6 +58,9 @@ class ChatClient:
         correct_password = "rahasia123"
 
         if password != correct_password:
+
+            self.socket.sendto(f"{self.username}".encode('utf-8'), (self.server_host, self.server_port))
+
             messagebox.showerror("Input Error", "Password anda salah")
             return
         
@@ -70,16 +76,16 @@ class ChatClient:
             else:
                 messagebox.showerror("Login Error", response_message)
         except (socket.gaierror, socket.error) as e:
-            # Display the error in a messagebox if there is a socket error
-            messagebox.showerror("Connection Error", "Nomor Port Salah")
 
+
+            messagebox.showerror("Connection Error", "IP/Port Salah")
 
     def setup_chat_ui(self):
         self.chat_frame = tk.Frame(self.master)
         self.chat_frame.pack(padx=10, pady=10)
 
         self.chat_log = scrolledtext.ScrolledText(self.chat_frame, state='disabled', width=50, height=20)
-        self.chat_log.grid(row=0, column=0, columnspan=2)  # Span two columns
+        self.chat_log.grid(row=0, column=0, columnspan=2) 
 
         self.username_frame = tk.Label(self.chat_frame, text = f"{self.username}", width=6)
         self.username_frame.grid(row=1, column=0)
@@ -98,11 +104,13 @@ class ChatClient:
             try:
                 data, _ = self.socket.recvfrom(1024)
                 message = data.decode('utf-8')
+
                 # Display the message without any duplication
                 self.chat_log.configure(state='normal')
                 self.chat_log.insert(tk.END, f"{message}\n")  # Directly insert received message
                 self.chat_log.configure(state='disabled')
                 self.chat_log.yview(tk.END)  # Scroll to the end
+
             except Exception as e:
                 print(f"Error: {e}")
                 break
@@ -110,6 +118,7 @@ class ChatClient:
     def send_message(self):
         message = self.message_entry.get()
         if message:
+
             formatted_message = f"{self.username}: {message}"  # Format the sent message
             self.socket.sendto(message.encode('utf-8'), (self.server_host, self.server_port))
             self.chat_log.configure(state='normal')
@@ -118,6 +127,7 @@ class ChatClient:
             self.message_entry.delete(0, tk.END)
 
     def logout(self):
+
         # Close the socket connection
         self.socket.close()
 
@@ -132,8 +142,10 @@ class ChatClient:
         self.password_entry.delete(0, tk.END)
         self.server_entry.delete(0, tk.END)
         self.port_entry.delete(0, tk.END)
+
         
         # Display the login UI
+
         self.login_frame.pack(padx=50, pady=10)
 
 
