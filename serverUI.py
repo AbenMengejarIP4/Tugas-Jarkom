@@ -41,10 +41,10 @@ class ChatServer:
                 self.log(f"Error dalam menerima data: {e}")
     
     def handle_client(self, data, addr):
-        message = data.decode('utf-8')
+        encrypted_message = data.decode('utf-8')
         if addr not in self.clients:
-            if message.startswith("LOGIN:"):
-                _, password, username = message.split(':')
+            if encrypted_message.startswith("LOGIN:"):
+                _, password, username = encrypted_message.split(':')
                 if password != self.password:
                     self.socket.sendto("Password salah.".encode('utf-8'), addr)
                 else:
@@ -57,20 +57,33 @@ class ChatServer:
                             self.broadcast(f"{username} bergabung ke chat room.", addr)
                             self.socket.sendto("Login berhasil.".encode('utf-8'), addr)
 
-        elif message.startswith("LOGOUT:"):
+        elif encrypted_message.startswith("LOGOUT:"):
             username = self.clients.pop(addr, None)
             if username:
                 self.log(f"Logout: {username} dari {addr}")
                 self.broadcast(f"{username} telah keluar dari chat room.", addr)
+
         else:
             username = self.clients[addr]
-            self.log(f"Pesan dari {username} ({addr}): {message}")
-            self.broadcast(f"{username}: {message}", addr)
+            decrypted_message = self.decrypt_message(encrypted_message)
+            self.log(f"Pesan dari {username} ({addr}): {decrypted_message}")
+            self.broadcast(f"{decrypted_message}", addr)
             
     def broadcast(self, message, sender_addr):
         for client_addr in self.clients:
             if client_addr != sender_addr:
                 self.socket.sendto(message.encode('utf-8'), client_addr)
+    
+    def encrypt_message(self, message):
+        
+        encrypted = ''.join(chr((ord(char) - 32 + 10) % 95 + 32) if 32 <= ord(char) <= 126 else char for char in message)
+        return encrypted
+
+    def decrypt_message(self, message):
+      
+        decrypted = ''.join(chr((ord(char) - 32 - 10) % 95 + 32) if 32 <= ord(char) <= 126 else char for char in message)
+        return decrypted
+
 
 if __name__ == "__main__":
     server = ChatServer("rahasia123") 
