@@ -2,7 +2,6 @@ import socket
 import threading
 import time
 
-
 class ChatServer:
     def __init__(self, password):
         self.password = password
@@ -10,12 +9,10 @@ class ChatServer:
         self.lock = threading.Lock()
         self.socket = None
         self.port = None
-
     
     def log(self, message):
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         print(f"[{timestamp}] {message}")
-
 
     def start(self):
         hostname = socket.gethostname()
@@ -24,7 +21,6 @@ class ChatServer:
         while True:
             try:
                 self.port = int(input("Masukkan nomor port untuk server: "))
-
                 if not (1 <= self.port <= 65535):
                     raise ValueError("Port number out of valid range.")
                 self.socket.bind((local_ip, self.port))
@@ -37,13 +33,11 @@ class ChatServer:
 
         print(f"Server berjalan di {local_ip}:{self.port}")
         
-
         while True:
             try:
                 data, addr = self.socket.recvfrom(1024)
                 threading.Thread(target=self.handle_client, args=(data, addr)).start()
             except Exception as e:
-
                 self.log(f"Error dalam menerima data: {e}")
     
     def handle_client(self, data, addr):
@@ -54,13 +48,11 @@ class ChatServer:
                 if password != self.password:
                     self.socket.sendto("Password salah.".encode('utf-8'), addr)
                 else:
-
                     with self.lock:
                         if username in self.clients.values():
                             self.socket.sendto("Username sudah digunakan.".encode('utf-8'), addr)
                         else:
                             self.clients[addr] = username
-
                             self.log(f"Login berhasil: {username} bergabung dari {addr}")
                             self.broadcast(f"{username} bergabung ke chat room.", addr)
                             self.socket.sendto("Login berhasil.".encode('utf-8'), addr)
@@ -74,7 +66,7 @@ class ChatServer:
             username = self.clients[addr]
             self.log(f"Pesan dari {username} ({addr}): {message}")
             self.broadcast(f"{username}: {message}", addr)
-
+            
     def broadcast(self, message, sender_addr):
         for client_addr in self.clients:
             if client_addr != sender_addr:
